@@ -138,7 +138,7 @@ GET /api/claims/audit-logs
 
 Returns all system activity logs (creation, Maker review, Checker decision).
 
-- How to Run
+### How to Run
 
    Option 1 (Visual Studio)
    Open solution
@@ -150,21 +150,21 @@ Returns all system activity logs (creation, Maker review, Checker decision).
 
    Swagger URL: https://localhost:<port>/swagger
 
-- Status Codes Used
+### Status Codes Used
 
   200 OK → Success
   400 BadRequest → Invalid input
   404 NotFound → Claim not found
   409 Conflict → Invalid workflow state
 
-- Design Notes
+### Design Notes
   DTOs used for request separation
   Enums used for status consistency
   In-memory database used for simplicity
   Audit logging implemented for traceability
   Basic locking used in Maker review for concurrency safety
 
-- Future Improvements
+### Future Improvements
 
   Add SQL Server / PostgreSQL database
   Implement JWT authentication (Maker/Checker roles)
@@ -172,7 +172,7 @@ Returns all system activity logs (creation, Maker review, Checker decision).
   Add unit and integration tests
   Replace in-memory storage with persistent DB
 
-- Summary
+### Summary
 
   This project simulates a real-world insurance claim processing system with a Maker-Checker workflow.
   It focuses on clean API design, state management, audit tracking, and basic concurrency handling using ASP.NET Core   Web API.
