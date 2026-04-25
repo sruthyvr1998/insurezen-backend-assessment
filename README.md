@@ -1,157 +1,143 @@
-TASK 1 — Requirements Analysis
-1. Overview
+InsureZen Backend API
+Problem Understanding (Task 1 - Requirements Analysis)
 
-InsureZen processes medical insurance claims submitted by multiple insurance companies. Each claim goes through a two-stage review workflow involving a Maker and a Checker before being finalized and forwarded.
+InsureZen is a backend system for processing medical insurance claims. Claims come from an external system already in structured format (no OCR needed). The system supports a two-step human review workflow.
 
-2. Entities
-Claim
-
-Represents an insurance claim in the system.
-
-Fields:
-
-   - Id (unique identifier)
-   - PatientName
-   - InsuranceCompany
-   - Hospital
-   - Amount
-   - Status (Pending, MakerReviewed, CheckerReviewed, Forwarded)
-   - CreatedAt
-   - Review Data (embedded within Claim)
-
-Instead of separate entities, review information is stored within the Claim for simplicity.
-
-   - MakerDecision (Approve / Reject)
-   - MakerComment
-   - CheckerDecision
-   - CheckerComment
-3. Actors
-   Maker
-   - Reviews claims first
-   - Adds recommendation (Approve / Reject)
-   - Provides comments
-   Checker
-   - Reviews Maker’s decision
-   - Provides final decision
-   - Adds comments
+1. Actors
+   - Maker → First-level reviewer who evaluates claim and gives recommendation
+   - Checker → Final reviewer who validates Maker’s decision
+   - System → Stores claims, handles workflow, maintains logs
+2. Core Entities
+   Claim
+      - Id
+      - PatientName
+      - InsuranceCompany
+      - Amount
+      - Status (New, Recommended, Approved, Rejected)
+      - MakerId / CheckerId
+      - MakerDecision / CheckerDecision
+      - Feedback
+      - CreatedAt
+3. Workflow
+   - Claim is created → Status = New
+   - Maker reviews claim → Status = Recommended
+   - Checker reviews Maker decision → Final status: Approved or Rejected
 4. Functional Requirements
-   - The system must allow creation of new claims
-   - The system must allow Makers to review claims and provide recommendations
-   - The system must allow Checkers to review Maker decisions and provide final decisions
-   - The system must store all claim data including review history
-   - The system must provide APIs to retrieve claims
-   - The system must support pagination and filtering of claims
+   - Create claim
+   - Maker review with decision + feedback
+   - Checker final review
+   - Store audit logs
+   - Paginated + filtered claim history
+   - Fetch all audit logs
 5. Non-Functional Requirements
-   - Concurrency: Multiple users may access the system simultaneously; a claim should not be reviewed by multiple          Makers at the same time
-   - Data Integrity: Claim state transitions must follow defined workflow rules
-   - Auditability: All decisions and comments must be stored for traceability
-   - Scalability: System should handle large volumes of claims
-6. Claim Status Workflow
-   Pending → MakerReviewed → CheckerReviewed → Forwarded
-7. Edge Cases
-   - Maker tries to review a claim that is already reviewed
-   - Checker tries to review before Maker completes review
-   - Multiple Makers attempt to review the same claim simultaneously
-   - Invalid input data (missing fields, incorrect values)
-   - Attempt to modify claim after final decision
-8. Assumptions
-   - Claim data is already extracted and provided as structured input
-   - Each claim is reviewed by only one Maker and one Checker
-   - Once Checker decision is made, the claim cannot be modified
-   - No actual integration with insurance company is required (simulation only)
-   - Claim assignment is handled implicitly via claim status
+   - Handle multiple users reviewing claims (basic concurrency handled using lock)
+   - Maintain data consistency during status transitions
+   - Fast retrieval of claim history (pagination used)
+   - Auditability of all actions
+6. Assumptions
+   - No authentication system is implemented (MakerId/CheckerId passed in request body)
+   - Data is stored in-memory (no database used)
+   - external OCR/document processing system already extracts claim data and sends structured JSON input to this API.
+   - Single service application (no microservices required)
 
-TASK 2 — API Design
-1. Base URL
-/api/claims
-2. Endpoints
-   1. Create Claim
-      POST /api/claims
+API Design (Task 2)
+Base URL: /api/claims
 
-      Description: Create a new insurance claim
+1. Create Claim
 
-      Request Body:
+POST /api/claims
 
-      {
-        "patientName": "John",
-        "insuranceCompany": "ABC Insurance",
-        "hospital": "XYZ Hospital",
-        "amount": 5000
-      }
+Request:
 
-      Response:
+{
+  "patientName": "John Doe",
+  "insuranceCompany": "ABC Insurance",
+  "amount": 5000
+}
 
-      {
-        "id": 1,
-        "status": "Pending"
-      }
-2. Get All Claims (with pagination & filtering)
-   GET /api/claims?page=1&pageSize=10&status=Pending
+Response: Created claim object
 
-   Description: Retrieve paginated list of claims
+2. Get All Claims
 
-   Supports filtering by:
+GET /api/claims
 
-      - status
-      - insurance company
-      - date range (optional)
-3. Get Claim by ID
-   GET /api/claims/{id}
+Returns all claims in system
 
-   Description: Retrieve details of a specific claim
+3. Maker Review
 
-4. Maker Review
-   POST /api/claims/{id}/maker-review
+POST /api/claims/{id}/maker-review
 
-   Description: Maker reviews claim and provides recommendation
+Request:
 
-   Request Body:
+{
+  "decision": "Approved",
+  "makerId": "MKR001",
+  "feedback": "Looks valid"
+}
 
-   {
-     "decision": "Approve",
-     "comment": "Documents are valid"
-   }
+Behavior:
 
-   Behavior:
+Only allowed if status = New
+Updates status → Recommended
+Stores Maker decision + feedback
 
-   - Allowed only when status = Pending
-   - Updates claim status to MakerReviewed
-5. Checker Review
-   POST /api/claims/{id}/checker-review
+4. Checker Review
 
-   Description: Checker reviews Maker decision and gives final decision
+POST /api/claims/{id}/checker-review
 
-   Request Body:
+Request:
 
-   {
-     "decision": "Approved",
-     "comment": "Verified and approved"
-   }   
+{
+  "decision": "Approved",
+  "checkerId": "CHK001",
+  "feedback": "Verified successfully"
+}
 
-   Behavior:
+Behavior:
 
-   - Allowed only when status = MakerReviewed
-   - Updates claim status to CheckerReviewed
-6. Forward Claim (Simulation)
-   POST /api/claims/{id}/forward
+Only allowed if status = Recommended
+Final status becomes Approved or Rejected
 
-   Description: Simulates forwarding claim to insurance company
+5. Claim History (Pagination + Filtering)
 
-   Behavior:
+GET /api/claims/history?page=1&pageSize=5&status=Approved&company=ABC
 
-   - Allowed only when status = CheckerReviewed
-   - Updates status to Forwarded
-   - Logs or returns confirmation message
-3. Status Codes
-   - 200 OK → Successful operation
-   - 400 Bad Request → Invalid input or invalid workflow state
-   - 404 Not Found → Claim not found
-4. Workflow Handling
-   - Claims start in Pending
-   - Maker updates claim → MakerReviewed
-   - Checker updates claim → CheckerReviewed
-   - Final step → Forwarded
-5. Concurrency Handling
-   - Claim state is validated before any update
-   - A claim cannot be reviewed by multiple users simultaneously
-   - Status checks prevent invalid transitions
+Supports:
+
+Pagination
+Filter by status
+Filter by insurance company
+
+6. Audit Logs
+
+GET /api/claims/audit-logs
+
+Returns system activity logs
+
+- Status Codes Used 
+  200 OK → Success
+  400 BadRequest → Invalid input
+  404 NotFound → Claim not found
+  409 Conflict → Invalid workflow state
+  Design Notes (short explanation)
+  Used DTOs for request separation
+  Used Enums for status consistency
+  Used in-memory DB for simplicity
+  Added Audit Logger for traceability
+  Basic locking used in Maker review for concurrency safety
+
+- How to Run
+  Clone the repository
+  Open the solution in Visual Studio
+  Run the project using: dotnet run
+  Or simply press the Run (▶) button in Visual Studio.
+  Swagger will open automatically in the browser.
+  
+- Summary
+  This project simulates a real-world insurance claim workflow with Maker-Checker approval system, focusing on:
+
+  - Clean API design
+  - State transitions
+  - Basic concurrency handling
+  - Audit tracking
+  - Filtering & pagination support
