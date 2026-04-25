@@ -1,70 +1,101 @@
-InsureZen Backend API
+#  InsureZen Backend API
 
-Problem Understanding (Task 1 - Requirements Analysis)
+##  Problem Overview
 
-InsureZen is a backend system for processing medical insurance claims. Claims come from an external system already in structured format (no OCR needed). The system supports a two-step human review workflow.
+InsureZen is a backend system designed to process medical insurance claims.  
+Claims are already received in structured format from an external system (OCR is not part of this scope).
 
-1. Actors
-   - Maker → First-level reviewer who evaluates claim and gives recommendation
-   - Checker → Final reviewer who validates Maker’s decision
-   - System → Stores claims, handles workflow, maintains logs
-2. Core Entities
-   Claim
-      - Id
-      - PatientName
-      - InsuranceCompany
-      - Amount
-      - Status (New, Recommended, Approved, Rejected)
-      - MakerId / CheckerId
-      - MakerDecision / CheckerDecision
-      - Feedback
-      - CreatedAt
-3. Workflow
-   - Claim is created → Status = New
-   - Maker reviews claim → Status = Recommended
-   - Checker reviews Maker decision → Final status: Approved or Rejected
-4. Functional Requirements
-   - Create claim
-   - Maker review with decision + feedback
-   - Checker final review
-   - Store audit logs
-   - Paginated + filtered claim history
-   - Fetch all audit logs
-5. Non-Functional Requirements
-   - Handle multiple users reviewing claims (basic concurrency handled using lock)
-   - Maintain data consistency during status transitions
-   - Fast retrieval of claim history (pagination used)
-   - Auditability of all actions
-6. Assumptions
-   - No authentication system is implemented (MakerId/CheckerId passed in request body)
-   - Data is stored in-memory (no database used)
-   - external OCR/document processing system already extracts claim data and sends structured JSON input to this API.
-   - Single service application (no microservices required)
+The system follows a **two-step human review workflow**:
+- Maker Review (initial recommendation)
+- Checker Review (final decision)
 
-API Design (Task 2)
-Base URL: /api/claims
 
-1. Create Claim
+##  Actors
 
-POST /api/claims
+- **Maker** → Reviews claims and provides recommendation (Approve/Reject)
+- **Checker** → Reviews Maker decision and gives final decision
+- **System** → Manages claims, workflow, and audit logs
+
+
+##  Core Entities
+
+### Claim
+- Id
+- PatientName
+- InsuranceCompany
+- Amount
+- Status (New, Recommended, Approved, Rejected)
+- MakerId
+- CheckerId
+- MakerDecision
+- CheckerDecision
+- MakerFeedback
+- CheckerFeedback
+- CreatedAt
+
+---
+
+##  Workflow
+
+  New → Maker Review → Recommended → Checker Review → Approved / Rejected
+
+
+---
+
+##  Functional Requirements
+
+- Create insurance claim
+- Maker review with decision + feedback
+- Checker final review
+- Maintain audit logs
+- Paginated + filtered claim history
+- Retrieve audit logs
+
+---
+
+##  Non-Functional Requirements
+
+- Handle multiple reviewers (basic concurrency handled using lock)
+- Ensure correct state transitions between workflow stages
+- Maintain audit traceability
+- Efficient filtering and pagination for history API
+
+---
+
+##  Assumptions
+
+- Authentication is not implemented (MakerId/CheckerId passed in request body)
+- Data is stored in-memory (no database used)
+- External OCR/document system already provides structured claim data
+- Application is a single monolithic ASP.NET Core Web API (no microservices)
+
+---
+
+#  API Design (Task 2)
+
+## Base URL  :  /api/claims
+
+
+---
+
+## 1️. Create Claim
+**POST** `/api/claims`
 
 Request:
-
+```json
 {
   "patientName": "John Doe",
   "insuranceCompany": "ABC Insurance",
   "amount": 5000
 }
 
-Response: Created claim object
-
-2. Get All Claims
+## 2️. Get All Claims
 
 GET /api/claims
 
-Returns all claims in system
+Returns all claims stored in system.
 
-3. Maker Review
+## 3️. Maker Review
 
 POST /api/claims/{id}/maker-review
 
@@ -73,16 +104,16 @@ Request:
 {
   "decision": "Approved",
   "makerId": "MKR001",
-  "feedback": "Looks valid"
+  "feedback": "Valid claim"
 }
 
-Behavior:
+Rules:
 
-Only allowed if status = New
+Allowed only when status = New
 Updates status → Recommended
 Stores Maker decision + feedback
 
-4. Checker Review
+## 4️. Checker Review
 
 POST /api/claims/{id}/checker-review
 
@@ -94,14 +125,16 @@ Request:
   "feedback": "Verified successfully"
 }
 
-Behavior:
+Rules:
 
-Only allowed if status = Recommended
-Final status becomes Approved or Rejected
+Allowed only when status = Recommended
+Final status → Approved / Rejected
 
-5. Claim History (Pagination + Filtering)
+## 5️. Claim History (Pagination + Filtering)
 
-GET /api/claims/history?page=1&pageSize=5&status=Approved&company=ABC
+GET
+
+/api/claims/history?page=1&pageSize=5&status=Approved&company=ABC Insurance
 
 Supports:
 
@@ -109,39 +142,47 @@ Pagination
 Filter by status
 Filter by insurance company
 
-6. Audit Logs
+## 6️. Audit Logs
 
 GET /api/claims/audit-logs
 
-Returns system activity logs
+Returns all system activity logs.
+
+- How to Run
+
+   Option 1 (Visual Studio)
+   Open solution
+   Click ▶ Run button
+   Swagger opens automatically in browser
+
+   Option 2 (CLI)
+   dotnet run
+
+   Swagger URL: https://localhost:<port>/swagger
 
 - Status Codes Used
-  
+
   200 OK → Success
   400 BadRequest → Invalid input
   404 NotFound → Claim not found
   409 Conflict → Invalid workflow state
-  Design Notes (short explanation)
-  Used DTOs for request separation
-  Used Enums for status consistency
-  Used in-memory DB for simplicity
-  Added Audit Logger for traceability
+
+- Design Notes
+  DTOs used for request separation
+  Enums used for status consistency
+  In-memory database used for simplicity
+  Audit logging implemented for traceability
   Basic locking used in Maker review for concurrency safety
 
-- How to Run
-  
-  Clone the repository
-  Open the solution in Visual Studio
-  Run the project using: dotnet run
-  Or simply press the Run (▶) button in Visual Studio.
-  Swagger will open automatically in the browser.
-  
-- Summary
-  
-  This project simulates a real-world insurance claim workflow with Maker-Checker approval system, focusing on:
+- Future Improvements
 
-  - Clean API design
-  - State transitions
-  - Basic concurrency handling
-  - Audit tracking
-  - Filtering & pagination support
+  Add SQL Server / PostgreSQL database
+  Implement JWT authentication (Maker/Checker roles)
+  Add service layer for better separation of concerns
+  Add unit and integration tests
+  Replace in-memory storage with persistent DB
+
+- Summary
+
+  This project simulates a real-world insurance claim processing system with a Maker-Checker workflow.
+  It focuses on clean API design, state management, audit tracking, and basic concurrency handling using ASP.NET Core   Web API.
