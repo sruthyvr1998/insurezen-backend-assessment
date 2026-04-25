@@ -71,12 +71,12 @@ The system follows a **two-step human review workflow**:
 ## Base URL  :  /api/claims
 
 
-
 1️. Create Claim
-**POST** `/api/claims`
+
+POST/api/claims
 
 Request:
-```json
+
 {
   "patientName": "John Doe",
   "insuranceCompany": "ABC Insurance",
