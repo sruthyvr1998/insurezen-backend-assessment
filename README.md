@@ -33,14 +33,12 @@ The system follows a **two-step human review workflow**:
 - CheckerFeedback
 - CreatedAt
 
----
 
 ##  Workflow
 
   New → Maker Review → Recommended → Checker Review → Approved / Rejected
 
 
----
 
 ##  Functional Requirements
 
@@ -51,7 +49,6 @@ The system follows a **two-step human review workflow**:
 - Paginated + filtered claim history
 - Retrieve audit logs
 
----
 
 ##  Non-Functional Requirements
 
@@ -60,7 +57,6 @@ The system follows a **two-step human review workflow**:
 - Maintain audit traceability
 - Efficient filtering and pagination for history API
 
----
 
 ##  Assumptions
 
@@ -69,16 +65,14 @@ The system follows a **two-step human review workflow**:
 - External OCR/document system already provides structured claim data
 - Application is a single monolithic ASP.NET Core Web API (no microservices)
 
----
 
 #  API Design (Task 2)
 
 ## Base URL  :  /api/claims
 
 
----
 
-## 1️. Create Claim
+1️. Create Claim
 **POST** `/api/claims`
 
 Request:
@@ -89,64 +83,60 @@ Request:
   "amount": 5000
 }
 
-## 2️. Get All Claims
+
+2️. Get All Claims
 
 GET /api/claims
 
-Returns all claims stored in system.
+Returns all claims stored in the system.
 
-## 3️. Maker Review
+3️. Maker Review
 
 POST /api/claims/{id}/maker-review
 
-Request:
-
+Request
 {
   "decision": "Approved",
   "makerId": "MKR001",
   "feedback": "Valid claim"
 }
 
-Rules:
-
+Rules
 Allowed only when status = New
 Updates status → Recommended
-Stores Maker decision + feedback
+Stores Maker decision and feedback
 
-## 4️. Checker Review
+4️. Checker Review
 
 POST /api/claims/{id}/checker-review
 
-Request:
-
+Request
 {
   "decision": "Approved",
   "checkerId": "CHK001",
   "feedback": "Verified successfully"
 }
 
-Rules:
+Rules
 
 Allowed only when status = Recommended
 Final status → Approved / Rejected
 
-## 5️. Claim History (Pagination + Filtering)
+5️. Claim History (Pagination + Filtering)
 
 GET
 
 /api/claims/history?page=1&pageSize=5&status=Approved&company=ABC Insurance
-
-Supports:
-
+Supports
 Pagination
 Filter by status
 Filter by insurance company
 
-## 6️. Audit Logs
+6️. Audit Logs
 
 GET /api/claims/audit-logs
 
-Returns all system activity logs.
+Returns all system activity logs (creation, Maker review, Checker decision).
 
 - How to Run
 
