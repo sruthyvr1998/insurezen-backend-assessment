@@ -1,4 +1,5 @@
 InsureZen Backend API
+
 Problem Understanding (Task 1 - Requirements Analysis)
 
 InsureZen is a backend system for processing medical insurance claims. Claims come from an external system already in structured format (no OCR needed). The system supports a two-step human review workflow.
