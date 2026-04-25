@@ -115,7 +115,8 @@ GET /api/claims/audit-logs
 
 Returns system activity logs
 
-- Status Codes Used 
+- Status Codes Used
+  
   200 OK → Success
   400 BadRequest → Invalid input
   404 NotFound → Claim not found
@@ -128,6 +129,7 @@ Returns system activity logs
   Basic locking used in Maker review for concurrency safety
 
 - How to Run
+  
   Clone the repository
   Open the solution in Visual Studio
   Run the project using: dotnet run
@@ -135,6 +137,7 @@ Returns system activity logs
   Swagger will open automatically in the browser.
   
 - Summary
+  
   This project simulates a real-world insurance claim workflow with Maker-Checker approval system, focusing on:
 
   - Clean API design
